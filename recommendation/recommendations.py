@@ -1,6 +1,7 @@
 # coding=utf8
 
 # A dictionary of movie critics and their ratings of a small set of movies
+from collections import defaultdict
 from math import sqrt
 
 critics = {
@@ -75,14 +76,46 @@ def get_top_matches(prefs, person, n=5, similarity=sim_pearson):
     scores = sorted(scores, key=lambda tup: tup[0], reverse=True)
     return scores[:n]
 
+def get_recommendations(prefs, person, similarity=sim_pearson):
+    """
+    Return the recommendation items which I haven't seen.
+    :param prefs:
+    :param person:
+    :param similarity:
+    :return:
+    """
+    totals = defaultdict(int)
+    sim_sums = defaultdict(int)
+    for other in prefs:
+        if other == person:
+            continue
+        sim = similarity(prefs, person, other)
+
+        if sim <= 0:
+            continue
+
+        for item in prefs[other]:
+            # only score items I haven't seen yet
+            if item not in prefs[person] or prefs[person][item] == 0:
+                totals[item] += prefs[other][item] * sim
+                sim_sums[item] += sim
+
+    # create the normalized list
+    ranking = [(total / sim_sums[item], item) for item, total in totals.items()]
+    ranking = sorted(ranking, key=lambda tup: tup[0], reverse=True)
+    return ranking
+
 def print_iter(iter):
     for item in iter:
         print item
 
 if __name__ == '__main__':
+    print_iter(get_recommendations(critics, 'Toby', similarity=sim_pearson))
+    print_iter(get_recommendations(critics, 'Toby', similarity=sim_distance))
     # print sim_distance(critics, 'Lisa Rose', 'Gene Seymour')
     # print sim_pearson(critics, 'Lisa Rose', 'Gene Seymour')
-    print '=======sim_pearson==========='
-    print_iter(get_top_matches(critics, 'Toby', similarity=sim_pearson))
-    print '=======sim_distance==========='
-    print_iter(get_top_matches(critics, 'Toby', similarity=sim_distance))
+
+    # print '=======sim_pearson==========='
+    # print_iter(get_top_matches(critics, 'Toby', similarity=sim_pearson))
+    # print '=======sim_distance==========='
+    # print_iter(get_top_matches(critics, 'Toby', similarity=sim_distance))
